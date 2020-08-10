@@ -5,7 +5,7 @@ namespace Wowwbot
 {
     class Player
     {
-        string username;
+        public string username;
         Random rng;
 
         int attack_min;
@@ -22,6 +22,9 @@ namespace Wowwbot
             attack_min = init_attack_min;
             attack_max = init_attack_max;
             can_attack = true;
+        }
+        public Player()
+        {
         }
 
         public void attack(Boss boss)

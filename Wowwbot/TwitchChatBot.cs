@@ -170,32 +170,40 @@ namespace Wowwbot
             {
                 if(stream_boss != null)
                 {
-
-                    foreach (Player current_player in player_list)
+                    try
                     {
-                        if (current_player.getCurrentCooldown() <= TimeSpan.Zero) { current_player.setCanAttackTrue(); }
-                        if (current_player.getUsername() == e.ChatMessage.Username)
+                        for (int i = 0; i < player_list.Count; i++)
                         {
-                            current_player.setCurrentCooldown(attack_cooldown - (DateTime.Now - current_player.getStartAttackTime()));
-                            if (current_player.getCanAttack())
+                            Player current_player = player_list[i];
+
+                            if (current_player.getCurrentCooldown() <= TimeSpan.Zero) { current_player.setCanAttackTrue(); }
+                            if (e.ChatMessage.Username == current_player.getUsername())
                             {
-                                current_player.attack(stream_boss);
-                                current_player.setCurrentCooldown(attack_cooldown);
-                                client.SendMessage(TwitchInfo.ChannelName, $"/me {e.ChatMessage.Username} dealt {current_player.getLastDamageDealt().ToString()} damage to {stream_boss.getName()}. Boss' health is now {stream_boss.getHealth()}. {e.ChatMessage.Username} your attack cooldown is {current_player.getCurrentCooldown().Minutes}m{current_player.getCurrentCooldown().Seconds}s");
+                                current_player.setCurrentCooldown(attack_cooldown - (DateTime.Now - current_player.getStartAttackTime()));
+                                if (current_player.getCanAttack())
+                                {
+                                    current_player.attack(stream_boss);
+                                    current_player.setCurrentCooldown(attack_cooldown);
+                                    client.SendMessage(TwitchInfo.ChannelName, $"/me {current_player.getUsername()} dealt {current_player.getLastDamageDealt().ToString()} damage to {stream_boss.getName()}. Boss' health is now {stream_boss.getHealth()}. {e.ChatMessage.Username} your attack cooldown is {current_player.getCurrentCooldown().Minutes}m{current_player.getCurrentCooldown().Seconds}s");
+                                }
+                                else
+                                {
+                                    client.SendMessage(TwitchInfo.ChannelName, $"/me {current_player.getUsername()} can't attack now! Your attack cooldown is {current_player.getCurrentCooldown().Minutes}m{current_player.getCurrentCooldown().Seconds}s");
+                                }
                             }
                             else
                             {
-                                client.SendMessage(TwitchInfo.ChannelName, $"/me {e.ChatMessage.Username} can't attack now! Your attack cooldown is {current_player.getCurrentCooldown().Minutes}m{current_player.getCurrentCooldown().Seconds}s");
+                                Player new_player = new Player(e.ChatMessage.Username, 100, 200);
+                                player_list.Add(new_player);
+                                new_player.attack(stream_boss);
+                                new_player.setCurrentCooldown(attack_cooldown - (DateTime.Now - new_player.getStartAttackTime()));
+                                client.SendMessage(TwitchInfo.ChannelName, $"/me {new_player.getUsername()} dealt {new_player.getLastDamageDealt().ToString()} damage to {stream_boss.getName()}. Boss' health is now {stream_boss.getHealth()}. {e.ChatMessage.Username} your attack cooldown is {new_player.getCurrentCooldown().Minutes}m{new_player.getCurrentCooldown().Seconds}s");
                             }
                         }
-                        else
-                        {
-                            Player new_player = new Player(e.ChatMessage.Username, 100, 200);
-                            player_list.Add(new_player);
-                            new_player.attack(stream_boss);
-                            new_player.setCurrentCooldown(attack_cooldown - (DateTime.Now - new_player.getStartAttackTime()));
-                            client.SendMessage(TwitchInfo.ChannelName, $"/me {e.ChatMessage.Username} dealt {new_player.getLastDamageDealt().ToString()} damage to {stream_boss.getName()}. Boss' health is now {stream_boss.getHealth()}. {e.ChatMessage.Username} your attack cooldown is {new_player.getCurrentCooldown().Minutes}m{new_player.getCurrentCooldown().Seconds}s");
-                        }
+                    }
+                    catch(Exception exception)
+                    {
+                        Console.WriteLine(exception.ToString());
                     }
                     if (player_list.Count == 0) //First attack since opening the application
                     {
@@ -203,9 +211,9 @@ namespace Wowwbot
                         player_list.Add(new_player);
                         new_player.attack(stream_boss);
                         new_player.setCurrentCooldown(attack_cooldown - (DateTime.Now - new_player.getStartAttackTime()));
-                        client.SendMessage(TwitchInfo.ChannelName, $"/me {e.ChatMessage.Username} dealt {new_player.getLastDamageDealt().ToString()} damage to {stream_boss.getName()}. Boss' health is now {stream_boss.getHealth()}. {e.ChatMessage.Username} your attack cooldown is {new_player.getCurrentCooldown().Minutes}m{new_player.getCurrentCooldown().Seconds}s");
+                        client.SendMessage(TwitchInfo.ChannelName, $"/me {new_player.getUsername()} dealt {new_player.getLastDamageDealt().ToString()} damage to {stream_boss.getName()}. Boss' health is now {stream_boss.getHealth()}. {new_player.getUsername()} your attack cooldown is {new_player.getCurrentCooldown().Minutes}m{new_player.getCurrentCooldown().Seconds}s");
                     }
-                    if(stream_boss.getHealth() <= 0)
+                    if (stream_boss.getHealth() <= 0)
                     {
                         stream_boss = null;
                         client.SendMessage(TwitchInfo.ChannelName, $"/me Boss destroyed! {e.ChatMessage.Username} landed the final blow! Please accept your 500 channel points as reward.");
