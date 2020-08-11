@@ -15,6 +15,8 @@ namespace Wowwbot
         DateTime start_attack_time;
         TimeSpan current_cooldown;
         static bool can_attack;
+
+        int current_roulette_streak;
         
         public Player(string init_name, int init_attack_min, int init_attack_max)
         {
@@ -22,10 +24,9 @@ namespace Wowwbot
             attack_min = init_attack_min;
             attack_max = init_attack_max;
             can_attack = true;
+            current_roulette_streak = 0;
         }
-        public Player()
-        {
-        }
+        public Player() { }
 
         public void attack(Boss boss)
         {
@@ -65,6 +66,18 @@ namespace Wowwbot
         public void setCanAttackTrue()
         {
             can_attack = true;
+        }
+        public int getCurrentRouletteStreak()
+        {
+            return current_roulette_streak;
+        }
+        public void addOneCurrentRouletteStreak()
+        {
+            current_roulette_streak += 1;
+        }
+        public void resetCurrentRouletteStreak()
+        {
+            current_roulette_streak = 0;
         }
 
         int minutes_to_milliseconds(int minutes)

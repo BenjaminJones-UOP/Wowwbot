@@ -19,7 +19,7 @@ namespace Wowwbot
         const int boss_stats_timer_minutes = 10;
         const int max_timeout = 300;
         const int min_timeout = 10;
-        TimeSpan attack_cooldown = new TimeSpan(0, 1, 0); //Player's attack cooldown
+        TimeSpan attack_cooldown = new TimeSpan(0, 5, 0); //Player's attack cooldown
         int wowwyyKcount = 0;
         string path = @"..\\..\\wowwyyKcount.txt";
 
@@ -222,16 +222,9 @@ namespace Wowwbot
                     }
                     catch (Exception exception)
                     {
-                        Console.WriteLine(exception.ToString());
+                        Console.WriteLine($"{DateTime.Now.ToString()} Exception in !attack command: { exception.ToString()}");
+                        client.SendMessage(TwitchInfo.ChannelName, $"/me @breadaddiction Exception caught in !attack function.");
                     }
-                    //if (player_list.Count == 0) //First attack since opening the application
-                    //{
-                    //    Player new_player = new Player(e.ChatMessage.Username, 100, 200);
-                    //    player_list.Add(new_player);
-                    //    new_player.attack(stream_boss);
-                    //    new_player.setCurrentCooldown(attack_cooldown - (DateTime.Now - new_player.getStartAttackTime()));
-                    //    client.SendMessage(TwitchInfo.ChannelName, $"/me {new_player.getUsername()} dealt {new_player.getLastDamageDealt().ToString()} damage to {stream_boss.getName()}. Boss' health is now {stream_boss.getHealth()}. {new_player.getUsername()} your attack cooldown is {new_player.getCurrentCooldown().Minutes}m{new_player.getCurrentCooldown().Seconds}s");
-                    //}
                     if (stream_boss.getHealth() <= 0)
                     {
                         stream_boss = null;
@@ -260,6 +253,34 @@ namespace Wowwbot
                 }
                 else
                 {
+                    Player current_player = new Player();
+                    Player new_player = new Player();
+                    int hit_count = 0;
+                    bool player_found = false;
+                    for (int i = 0; i < player_list.Count; i++)
+                    {
+                        new_player = player_list[i];
+                        if (e.ChatMessage.Username == new_player.getUsername())
+                        {
+                            player_found = true;
+                            hit_count++;
+                        }
+                        else
+                        {
+                            player_found = false;
+                        }
+                        if (player_found)
+                        {
+                            current_player = player_list[i];
+                        }
+                        hit_count++;
+                    }
+                    if (hit_count == player_list.Count)
+                    {
+                        current_player = new Player(e.ChatMessage.Username, 100, 200);
+                        player_list.Add(current_player);
+                    }
+
                     Random timeout_chance = new Random();
                     Random timeout_length = new Random();
 
@@ -267,10 +288,13 @@ namespace Wowwbot
                     if (chance == 1)
                     {
                         client.SendMessage(TwitchInfo.ChannelName, $"/timeout {e.ChatMessage.Username} {timeout_length.Next(min_timeout, max_timeout).ToString()}");
+                        client.SendMessage(TwitchInfo.ChannelName, $"/me {e.ChatMessage.Username} Your streak was: {current_player.getCurrentRouletteStreak()}!");
+                        current_player.resetCurrentRouletteStreak();
                     }
                     else
                     {
-                        client.SendMessage(TwitchInfo.ChannelName, $"/me {e.ChatMessage.Username} You got lucky mate");
+                        current_player.addOneCurrentRouletteStreak();
+                        client.SendMessage(TwitchInfo.ChannelName, $"/me {e.ChatMessage.Username} You got lucky mate. Current streak: {current_player.getCurrentRouletteStreak()}");
                     }
                 }
             }
