@@ -13,6 +13,13 @@ namespace Wowwbot
 {
     internal class TwitchChatBot 
     {
+        enum BossGameType
+        {
+            TotalDmgDealt,
+            LastHit,
+            End
+        };
+
         const int max_sub_month = 11;
         const int social_timer_minutes = 25;
         const int schedule_timer_minutes = 45;
@@ -160,11 +167,11 @@ namespace Wowwbot
             {
                 if (stream_boss != null)
                 {
-                    client.SendMessage(TwitchInfo.ChannelName, $"/me A small minigame where twitch chatters can attack the current stream's boss! Use the !attack command to play. Winner receives 500 channel points. The current boss is called '{stream_boss.getName()}' and has {stream_boss.getHealth()} hit points left.");
+                    client.SendMessage(TwitchInfo.ChannelName, $"/me A small minigame where twitch chatters can attack the current stream's boss! Use the !attack command to play. The current boss is called '{stream_boss.getName()}' and has {stream_boss.getHealth()} hit points left.");
                 }
                 else
                 {
-                    client.SendMessage(TwitchInfo.ChannelName, $"/me A small minigame where twitch chatters can attack the current stream's boss! Use the !attack command to play. Winner receives 500 channel points. There is currently no boss active! Message a mod to add one.");
+                    client.SendMessage(TwitchInfo.ChannelName, $"/me A small minigame where twitch chatters can attack the current stream's boss! Use the !attack command to play. There is currently no boss active! Message a mod to add one.");
                 }
             }
             //Boss battle attack command
@@ -228,7 +235,7 @@ namespace Wowwbot
                     if (stream_boss.getHealth() <= 0)
                     {
                         stream_boss = null;
-                        client.SendMessage(TwitchInfo.ChannelName, $"/me Boss destroyed! {e.ChatMessage.Username} landed the final blow! Please accept your 500 channel points as reward.");
+                        client.SendMessage(TwitchInfo.ChannelName, $"/me Boss destroyed! {e.ChatMessage.Username} landed the final blow! The stream victor!");
                     }
                 }
                 else
@@ -429,7 +436,8 @@ namespace Wowwbot
         //On user timed out
         private void Client_OnUserTimedout(object sender, OnUserTimedoutArgs e)
         {
-            client.SendMessage(e.UserTimeout.Channel, $"/me {e.UserTimeout.Username} We'll leave the lid open for ya mate wowwyyT {e.UserTimeout.TimeoutDuration} seconds in the bin");
+            TimeSpan timeout_time = TimeSpan.FromSeconds(e.UserTimeout.TimeoutDuration);
+            client.SendMessage(e.UserTimeout.Channel, $"/me {e.UserTimeout.Username} We'll leave the lid open for ya mate wowwyyT {timeout_time.Minutes}m{timeout_time.Seconds}s in the bin");
         }
 
         //On user banned
