@@ -19,6 +19,10 @@ namespace Wowwbot
             LastHit,
             End
         };
+        static BossGameType boss_game_type;
+        string[] boss_game_type_string = {"Deal the most damage!" ,"Last hit the boss!" };
+        const int boss_health = 5000;
+        const int boss_health_dodge_threshold = 750;
 
         const int max_sub_month = 11;
         const int social_timer_minutes = 25;
@@ -53,7 +57,7 @@ namespace Wowwbot
             boss_stats_timer = new Timer(minutes_to_milliseconds(boss_stats_timer_minutes));
             boss_stats_timer.Start();
 
-            client.OnLog += Client_OnLog;
+            //client.OnLog += Client_OnLog;
             client.OnConnectionError += Client_OnConnectionError;
             client.OnMessageReceived += Client_OnMessageReceived;
             client.OnNewSubscriber += Client_OnNewSubscriber;
@@ -65,10 +69,14 @@ namespace Wowwbot
             schedule_timer.Elapsed += RepostSchedule;
             boss_stats_timer.Elapsed += RepostBossStats;
 
-            //pubsub.OnPubSubServiceConnected += PubSub_OnPubSubServiceConnected;
+            //pubsub.Connect();
             //pubsub.OnLog += PubSub_OnLog;
+            //pubsub.OnPubSubServiceError += PubSub_OnPubSubServiceError;
+            //pubsub.OnPubSubServiceConnected += PubSub_OnPubSubServiceConnected;
             //pubsub.OnListenResponse += PubSub_OnListenResponse;
-            //pubsub.ListenToVideoPlayback("wowwyyTV");
+            //pubsub.OnStreamUp += PubSub_OnStreamUp;
+            //pubsub.OnRewardRedeemed += PubSub_OnRewardRedeemed;
+            //pubsub.ListenToVideoPlayback(TwitchInfo.ChannelName);
 
             StreamReader countfile = new StreamReader(path);
             wowwyyKcount = int.Parse(countfile.ReadLine());
@@ -76,6 +84,8 @@ namespace Wowwbot
 
             player_list = new List<Player>();
             add_player = true;
+
+            boss_game_type = BossGameType.End;
 
             client.Connect();
         }
@@ -86,14 +96,26 @@ namespace Wowwbot
             schedule_timer.Stop();
         }
 
+        //private void PubSub_OnPubSubServiceError(object sender, OnPubSubServiceErrorArgs e)
+        //{
+        //    Console.WriteLine(e.Exception.ToString());
+        //}
+        //private void PubSub_OnPubSubServiceConnected(object sender, EventArgs e)
+        //{
+        //    pubsub.SendTopics(TwitchInfo.BotToken);
+        //}
         //private void PubSub_OnListenResponse(object sender, OnListenResponseArgs e)
         //{
         //    if (!e.Successful)
         //        throw new Exception($"Failed to listen! Response: {e.Response}");
         //}
-        //private void PubSub_OnPubSubServiceConnected(object sender, EventArgs e)
+        //private void PubSub_OnStreamUp(object sender, OnStreamUpArgs e)
         //{
-        //    pubsub.SendTopics(credentials.TwitchOAuth);
+        //    client.SendMessage(TwitchInfo.ChannelName, $"/me WowwyyTV just went live!");
+        //}
+        //private void PubSub_OnRewardRedeemed(object sender, OnRewardRedeemedArgs e)
+        //{
+        //    client.SendMessage(TwitchInfo.ChannelName, $"/me reward redeemed!?");
         //}
 
         public void RepostSocials(object sender, EventArgs e)
@@ -121,6 +143,7 @@ namespace Wowwbot
         //On message received
         private void Client_OnMessageReceived(object sender, OnMessageReceivedArgs e)
         {
+            //string roulette_reward = e.ChatMessage.CustomRewardId;
             //wowwyyK count logic
             if (e.ChatMessage.Message.Contains("wowwyyK"))
             {
@@ -177,54 +200,83 @@ namespace Wowwbot
             //Boss battle attack command
             if (e.ChatMessage.Message.Equals("!attack"))
             {
+                Random rng_attack_chance = new Random();
+                bool attack_landed = true;
                 if(stream_boss != null)
                 {
                     try
                     {
+                        Player current_player = new Player();
+                        Player new_player = new Player();
+                        int hit_count = 0;
+                        bool player_found = false;
                         for (int i = 0; i < player_list.Count; i++)
                         {
-                            Player current_player = player_list[i];
-
-                            if (e.ChatMessage.Username == current_player.getUsername())
+                            new_player = player_list[i];
+                            if (e.ChatMessage.Username == new_player.getUsername())
                             {
-                                current_player.setCurrentCooldown(attack_cooldown - (DateTime.Now - current_player.getStartAttackTime()));
-                                if (current_player.getCurrentCooldown() <= TimeSpan.Zero) { current_player.setCanAttackTrue(); }
-                                if (current_player.getCanAttack())
-                                {
-                                    current_player.attack(stream_boss);
-                                    current_player.setCurrentCooldown(attack_cooldown);
-                                    client.SendMessage(TwitchInfo.ChannelName, $"/me {current_player.getUsername()} dealt {current_player.getLastDamageDealt().ToString()} damage to {stream_boss.getName()}. Boss' health is now {stream_boss.getHealth()}. {e.ChatMessage.Username} your attack cooldown is {current_player.getCurrentCooldown().Minutes}m{current_player.getCurrentCooldown().Seconds}s");
-                                }
-                                else
-                                {
-                                    client.SendMessage(TwitchInfo.ChannelName, $"/me {current_player.getUsername()} can't attack now! Your attack cooldown is {current_player.getCurrentCooldown().Minutes}m{current_player.getCurrentCooldown().Seconds}s");
-                                }
-                            }
-                        }
-
-                        int hit_count = 0;
-                        foreach(Player player in player_list)
-                        {
-                            if(player.username == e.ChatMessage.Username)
-                            {
-                                add_player = false;
+                                player_found = true;
                                 hit_count++;
+                            }
+                            else
+                            {
+                                player_found = false;
+                            }
+                            if (player_found)
+                            {
+                                current_player = player_list[i];
                             }
                             hit_count++;
                         }
-                        if(hit_count == player_list.Count)
+                        if (hit_count == player_list.Count)
                         {
-                            add_player = true;
+                            current_player = new Player(e.ChatMessage.Username, -5, 200);
+                            player_list.Add(current_player);
                         }
 
-                        if (add_player)
+                        current_player.setCurrentCooldown(attack_cooldown - (DateTime.Now - current_player.getStartAttackTime()));
+                        if (current_player.getCurrentCooldown() <= TimeSpan.Zero) { current_player.setCanAttackTrue(); }
+                        if (current_player.getCanAttack())
                         {
-                            Player new_player = new Player(e.ChatMessage.Username, 100, 200);
-                            player_list.Add(new_player);
-                            new_player.attack(stream_boss);
-                            new_player.setCurrentCooldown(attack_cooldown - (DateTime.Now - new_player.getStartAttackTime()));
-                            client.SendMessage(TwitchInfo.ChannelName, $"/me {new_player.getUsername()} dealt {new_player.getLastDamageDealt().ToString()} damage to {stream_boss.getName()}. Boss' health is now {stream_boss.getHealth()}. {e.ChatMessage.Username} your attack cooldown is {new_player.getCurrentCooldown().Minutes}m{new_player.getCurrentCooldown().Seconds}s");
-                            add_player = false;
+                            if (boss_game_type == BossGameType.TotalDmgDealt)
+                            {
+                                current_player.attack(stream_boss);
+                                attack_landed = true;
+                            }
+                            else if (boss_game_type == BossGameType.LastHit)
+                            {
+                                if (stream_boss.getHealth() < boss_health_dodge_threshold)
+                                {
+                                    current_player.setAttackChance(rng_attack_chance.Next(0, 100));
+                                    if (current_player.getAttackChance() < 50)
+                                    {
+                                        current_player.attack(stream_boss);
+                                        attack_landed = true;
+                                    }
+                                    else
+                                    {
+                                        attack_landed = false;
+                                    }
+                                }
+                                else
+                                {
+                                    current_player.attack(stream_boss);
+                                }
+                            }
+
+                            current_player.setCurrentCooldown(attack_cooldown);
+                            if (attack_landed)
+                            {
+                                client.SendMessage(TwitchInfo.ChannelName, $"/me {current_player.getUsername()} dealt {current_player.getLastDamageDealt().ToString()} damage to {stream_boss.getName()}. Boss' health is now {stream_boss.getHealth()}. {e.ChatMessage.Username} your attack cooldown is {current_player.getCurrentCooldown().Minutes}m{current_player.getCurrentCooldown().Seconds}s");
+                            }
+                            else if (!attack_landed)
+                            {
+                                client.SendMessage(TwitchInfo.ChannelName, $"/me {current_player.getUsername()} missed!!!!!");
+                            }
+                        }
+                        else
+                        {
+                            client.SendMessage(TwitchInfo.ChannelName, $"/me {current_player.getUsername()} can't attack now! Your attack cooldown is {current_player.getCurrentCooldown().Minutes}m{current_player.getCurrentCooldown().Seconds}s");
                         }
                     }
                     catch (Exception exception)
@@ -236,6 +288,11 @@ namespace Wowwbot
                     {
                         stream_boss = null;
                         client.SendMessage(TwitchInfo.ChannelName, $"/me Boss destroyed! {e.ChatMessage.Username} landed the final blow! The stream victor!");
+
+                        foreach(Player player in player_list)
+                        {
+                            player.ResetBossRelatedStats();
+                        }
                     }
                 }
                 else
@@ -352,19 +409,27 @@ namespace Wowwbot
                 //Boss commands
                 if (e.ChatMessage.Message.StartsWith("!addboss"))
                 {
+                    if (boss_game_type == BossGameType.End)
+                    {
+                        Random rng_gametype = new Random();
+
+                        boss_game_type = (BossGameType)rng_gametype.Next(2);
+                    }
+
                     string boss_name = e.ChatMessage.Message.Remove(0,9);
                     if (stream_boss == null)
                     {
-                        stream_boss = new Boss(5000, boss_name);
-                        client.SendMessage(TwitchInfo.ChannelName, $"/me Boss '{stream_boss.getName()}' has been added");
+                        stream_boss = new Boss(boss_health, boss_name);
+                        client.SendMessage(TwitchInfo.ChannelName, $"/me Boss '{stream_boss.getName()}' has been added. The game type is: {boss_game_type_string[(int)boss_game_type]}");
                     }
                     else
                     {
-                        client.SendMessage(TwitchInfo.ChannelName, $"/me A Boss named '{stream_boss.getName()}' exists, no more can be added!");
+                        client.SendMessage(TwitchInfo.ChannelName, $"/me A Boss named '{stream_boss.getName()}' exists, no more can be added! The game type is: {boss_game_type_string[(int)boss_game_type]}");
                     }
                 }
                 if (e.ChatMessage.Message.Equals("!removeboss"))
                 {
+                    boss_game_type = BossGameType.End;
                     client.SendMessage(TwitchInfo.ChannelName, $"/me Boss '{stream_boss.getName()}' was removed");
                     stream_boss = null;
                 }

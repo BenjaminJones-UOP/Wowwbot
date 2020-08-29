@@ -10,6 +10,7 @@ namespace Wowwbot
 
         int attack_min;
         int attack_max;
+        int attack_chance;
 
         int last_damage_dealt;
         DateTime start_attack_time;
@@ -23,6 +24,7 @@ namespace Wowwbot
             username = init_name;
             attack_min = init_attack_min;
             attack_max = init_attack_max;
+            attack_chance = 100;
             can_attack = true;
             current_roulette_streak = 0;
         }
@@ -43,9 +45,21 @@ namespace Wowwbot
         {
             return can_attack;
         }
+        public void setCanAttackTrue()
+        {
+            can_attack = true;
+        }
         public int getLastDamageDealt()
         {
             return last_damage_dealt;
+        }
+        public int getAttackChance()
+        {
+            return attack_chance;
+        }
+        public void setAttackChance(int new_attack_chance)
+        {
+            attack_chance = new_attack_chance;
         }
         public string getUsername()
         {
@@ -63,10 +77,6 @@ namespace Wowwbot
         {
             current_cooldown = new_current_cooldown;
         }
-        public void setCanAttackTrue()
-        {
-            can_attack = true;
-        }
         public int getCurrentRouletteStreak()
         {
             return current_roulette_streak;
@@ -78,6 +88,11 @@ namespace Wowwbot
         public void resetCurrentRouletteStreak()
         {
             current_roulette_streak = 0;
+        }
+        public void ResetBossRelatedStats()
+        {
+            attack_chance = 100;
+            can_attack = true;
         }
 
         int minutes_to_milliseconds(int minutes)
