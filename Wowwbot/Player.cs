@@ -3,9 +3,9 @@ using System.Timers;
 
 namespace Wowwbot
 {
-    class Player
+    class Player : IComparable<Player>
     {
-        public string username;
+        string username;
         Random rng;
 
         int attack_min;
@@ -13,6 +13,7 @@ namespace Wowwbot
         int attack_chance;
 
         int last_damage_dealt;
+        int total_damage_dealt;
         DateTime start_attack_time;
         TimeSpan current_cooldown;
         static bool can_attack;
@@ -39,6 +40,29 @@ namespace Wowwbot
             boss.setHealth(boss_health);
             start_attack_time = DateTime.Now;
             can_attack = false;
+        }
+
+        public int CompareTo(Player other)
+        {
+            if (other == null)
+                return 1;
+            else
+                return this.total_damage_dealt.CompareTo(other.total_damage_dealt);
+        }
+
+        public void addOneCurrentRouletteStreak()
+        {
+            current_roulette_streak += 1;
+        }
+        public void resetCurrentRouletteStreak()
+        {
+            current_roulette_streak = 0;
+        }
+        public void ResetBossRelatedStats()
+        {
+            attack_chance = 100;
+            total_damage_dealt = 0;
+            can_attack = true;
         }
 
         public bool getCanAttack()
@@ -81,24 +105,14 @@ namespace Wowwbot
         {
             return current_roulette_streak;
         }
-        public void addOneCurrentRouletteStreak()
+        public int getTotalDamageDealt()
         {
-            current_roulette_streak += 1;
+            return total_damage_dealt;
         }
-        public void resetCurrentRouletteStreak()
+        public void addToTotalDamageDealt(int damage)
         {
-            current_roulette_streak = 0;
-        }
-        public void ResetBossRelatedStats()
-        {
-            attack_chance = 100;
-            can_attack = true;
+            total_damage_dealt += damage;
         }
 
-        int minutes_to_milliseconds(int minutes)
-        {
-            int milliseconds = minutes * 60000;
-            return milliseconds;
-        }
     }
 }

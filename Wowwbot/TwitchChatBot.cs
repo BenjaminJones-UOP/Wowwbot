@@ -20,9 +20,12 @@ namespace Wowwbot
             End
         };
         static BossGameType boss_game_type;
-        string[] boss_game_type_string = {"Deal the most damage!" ,"Last hit the boss!" };
-        const int boss_health = 5000;
+        string[] boss_game_type_string = {"Deal the most damage!", "Last hit the boss!" };
+        const int boss_health = 4000;
         const int boss_health_dodge_threshold = 750;
+        const int boss_dodge_chance = 50;
+        const int player_attack_min = -5;
+        const int player_attack_max = 200;
 
         const int max_sub_month = 11;
         const int social_timer_minutes = 25;
@@ -30,7 +33,7 @@ namespace Wowwbot
         const int boss_stats_timer_minutes = 10;
         const int max_timeout = 300;
         const int min_timeout = 10;
-        TimeSpan attack_cooldown = new TimeSpan(0, 5, 0); //Player's attack cooldown
+        TimeSpan attack_cooldown = new TimeSpan(0, 5, 0); //Player's attack cooldown hh:mm:ss format
         int wowwyyKcount = 0;
         string path = @"..\\..\\wowwyyKcount.txt";
 
@@ -45,7 +48,6 @@ namespace Wowwbot
         Timer boss_stats_timer;
         List<Player> player_list;
         Boss stream_boss;
-        static bool add_player;
         
         internal void Connect()
         {
@@ -83,7 +85,6 @@ namespace Wowwbot
             countfile.Close();
 
             player_list = new List<Player>();
-            add_player = true;
 
             boss_game_type = BossGameType.End;
 
@@ -136,7 +137,7 @@ namespace Wowwbot
         {
             if (client.IsConnected && stream_boss != null)
             {
-                client.SendMessage(TwitchInfo.ChannelName, $"/me The current boss roaming the stream is '{stream_boss.getName()}' with {stream_boss.getHealth()} hit points left. Our fellow loungers and the pug army must unite to take them down! Use the command !attack to play.");
+                client.SendMessage(TwitchInfo.ChannelName, $"/me The current boss roaming the stream is '{stream_boss.getName()}' with {stream_boss.getHealth()} hit points left. Our fellow loungers and the pug army must unite to take them down! Use the command !attack to play. Current game type is {boss_game_type_string[(int)boss_game_type]}");
             }
         }
 
@@ -163,7 +164,7 @@ namespace Wowwbot
             //Post wowwyyK count command
             if (e.ChatMessage.Message.Equals("!wowwyyKcount"))
             {
-                client.SendMessage(TwitchInfo.ChannelName,  $"/me wowwyyK {wowwyyKcount.ToString()}");
+                client.SendMessage(TwitchInfo.ChannelName,  $"/me wowwyyK {wowwyyKcount}");
             }
             //Socials command
             if (e.ChatMessage.Message.Equals("!socials"))
@@ -190,7 +191,7 @@ namespace Wowwbot
             {
                 if (stream_boss != null)
                 {
-                    client.SendMessage(TwitchInfo.ChannelName, $"/me A small minigame where twitch chatters can attack the current stream's boss! Use the !attack command to play. The current boss is called '{stream_boss.getName()}' and has {stream_boss.getHealth()} hit points left.");
+                    client.SendMessage(TwitchInfo.ChannelName, $"/me A small minigame where twitch chatters can attack the current stream's boss! Use the !attack command to play. The current boss is called '{stream_boss.getName()}' and has {stream_boss.getHealth()} hit points left. The game type is {boss_game_type_string[(int)boss_game_type]}");
                 }
                 else
                 {
@@ -230,7 +231,7 @@ namespace Wowwbot
                         }
                         if (hit_count == player_list.Count)
                         {
-                            current_player = new Player(e.ChatMessage.Username, -5, 200);
+                            current_player = new Player(e.ChatMessage.Username, player_attack_min, player_attack_max);
                             player_list.Add(current_player);
                         }
 
@@ -241,6 +242,7 @@ namespace Wowwbot
                             if (boss_game_type == BossGameType.TotalDmgDealt)
                             {
                                 current_player.attack(stream_boss);
+                                current_player.addToTotalDamageDealt(current_player.getLastDamageDealt());
                                 attack_landed = true;
                             }
                             else if (boss_game_type == BossGameType.LastHit)
@@ -248,7 +250,7 @@ namespace Wowwbot
                                 if (stream_boss.getHealth() < boss_health_dodge_threshold)
                                 {
                                     current_player.setAttackChance(rng_attack_chance.Next(0, 100));
-                                    if (current_player.getAttackChance() < 50)
+                                    if (current_player.getAttackChance() < boss_dodge_chance)
                                     {
                                         current_player.attack(stream_boss);
                                         attack_landed = true;
@@ -284,10 +286,17 @@ namespace Wowwbot
                         Console.WriteLine($"{DateTime.Now.ToString()} Exception in !attack command: { exception.ToString()}");
                         client.SendMessage(TwitchInfo.ChannelName, $"/me @breadaddiction Exception caught in !attack function.");
                     }
+                    //Boss killed
                     if (stream_boss.getHealth() <= 0)
                     {
                         stream_boss = null;
-                        client.SendMessage(TwitchInfo.ChannelName, $"/me Boss destroyed! {e.ChatMessage.Username} landed the final blow! The stream victor!");
+                        if (boss_game_type == BossGameType.LastHit)
+                            client.SendMessage(TwitchInfo.ChannelName, $"/me Boss destroyed! {e.ChatMessage.Username} landed the final blow! The stream victor!");
+                        else if(boss_game_type == BossGameType.TotalDmgDealt)
+                        {
+                            player_list.Sort();
+                            client.SendMessage(TwitchInfo.ChannelName, $"/me Boss destroyed! Winner for total damage dealt is {player_list[player_list.Count-1].getUsername()} with {player_list[player_list.Count-1].getTotalDamageDealt()} total damage.");
+                        }
 
                         foreach(Player player in player_list)
                         {
