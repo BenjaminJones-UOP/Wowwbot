@@ -118,11 +118,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Boss.cs" />
-    <Compile Include="Player.cs" />
-    <Compile Include="Program.cs" />
+    <Compile Include="Minigames\Boss.cs" />
+    <Compile Include="Minigames\GameManager.cs" />
+    <Compile Include="Minigames\Player.cs" />
+    <Compile Include="Bot\Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TwitchChatBot.cs" />
+    <Compile Include="Bot\TwitchChatBot.cs" />
     <Compile Include="TwitchInfo.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -143,5 +144,6 @@
     <Content Include="imageonline-co-whitebackgroundremoved.ico" />
     <Content Include="wowwbot icon.ico" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

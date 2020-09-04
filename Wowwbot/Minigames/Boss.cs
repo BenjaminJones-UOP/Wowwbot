@@ -13,15 +13,15 @@ namespace Wowwbot
             name = init_name;
         }
 
-        public int getHealth()
+        public int GetHealth()
         {
             return health;
         }
-        public void setHealth(int new_health)
+        public void SetHealth(int new_health)
         {
             health = new_health;
         }
-        public string getName()
+        public string GetName()
         {
             return name;
         }
