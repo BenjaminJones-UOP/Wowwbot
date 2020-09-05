@@ -20,6 +20,8 @@ namespace Wowwbot
         bool attack_landed;
 
         int current_roulette_streak;
+
+        int total_loot_stolen;
         
         public Player(string init_name, int init_attack_min, int init_attack_max)
         {
@@ -30,6 +32,7 @@ namespace Wowwbot
             current_roulette_streak = 0;
             can_play = true;
             attack_landed = true;
+            total_loot_stolen = 0;
         }
         public Player() { }
 
@@ -60,11 +63,12 @@ namespace Wowwbot
         {
             current_roulette_streak = 0;
         }
-        public void ResetBossRelatedStats()
+        public void ResetStats()
         {
             attack_chance = 100;
             total_damage_dealt = 0;
             can_play = true;
+            total_loot_stolen = 0;
         }
 
         public bool GetCanPlay()
@@ -122,6 +126,14 @@ namespace Wowwbot
         public void AddToTotalDamageDealt(int damage)
         {
             total_damage_dealt += damage;
+        }
+        public int GetTotalLootStolen()
+        {
+            return total_loot_stolen;
+        }
+        public void AddToLootStolen(int loot)
+        {
+            total_loot_stolen += loot;
         }
     }
 }

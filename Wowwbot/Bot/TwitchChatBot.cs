@@ -92,7 +92,7 @@ namespace Wowwbot
         //}
         //private void PubSub_OnStreamUp(object sender, OnStreamUpArgs e)
         //{
-        //    client.SendMessage(TwitchInfo.ChannelName, $"/me WowwyyTV just went live!");
+        //    client.SendMessage(TwitchInfo.ChannelName, $"/me Wowwyy just went live!");
         //}
         //private void PubSub_OnRewardRedeemed(object sender, OnRewardRedeemedArgs e)
         //{
@@ -110,7 +110,7 @@ namespace Wowwbot
         {
             if (client.IsConnected)
             {
-                client.SendMessage(TwitchInfo.ChannelName, $"/me WowwyyTV's schedule is every Thursday and Friday 4pm GMT+1 (UK). Unscheduled streams may occur so please follow to catch these as well!");
+                client.SendMessage(TwitchInfo.ChannelName, $"/me Wowwyy's schedule is every Thursday and Friday 4pm GMT+1 (UK). Unscheduled streams may occur so please follow to catch these as well!");
             }
         }
         public void RepostMinigameStats(object sender, EventArgs e)
@@ -151,7 +151,7 @@ namespace Wowwbot
             //Schedule command
             if (e.ChatMessage.Message.Equals("!schedule"))
             {
-                client.SendMessage(TwitchInfo.ChannelName, $"/me WowwyyTV's schedule is every Thursday and Friday 4pm GMT+1 (UK). Unscheduled streams may occur so please follow to catch these as well!");
+                client.SendMessage(TwitchInfo.ChannelName, $"/me Wowwyy's schedule is every Thursday and Friday 4pm GMT+1 (UK). Unscheduled streams may occur so please follow to catch these as well!");
             }
             //Wowcourt command
             if (e.ChatMessage.Message.Contains("!wowcourt"))

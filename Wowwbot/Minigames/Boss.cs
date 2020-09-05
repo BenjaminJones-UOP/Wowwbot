@@ -5,7 +5,7 @@ namespace Wowwbot
     class Boss
     {
         string name;
-        int health; //between 5000-10000
+        int health; 
 
         public Boss(int init_health, string init_name)
         {
