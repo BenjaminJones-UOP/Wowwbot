@@ -14,9 +14,9 @@ namespace Wowwbot
 
         int last_damage_dealt;
         int total_damage_dealt;
-        DateTime start_attack_time;
+        DateTime start_play_time;
         TimeSpan current_cooldown;
-        static bool can_play;
+        bool can_play;
         bool attack_landed;
 
         int current_roulette_streak;
@@ -39,11 +39,9 @@ namespace Wowwbot
         public void Attack(Boss boss)
         {
             rng = new Random();
-            int boss_health = boss.GetHealth();
             last_damage_dealt = rng.Next(attack_min, attack_max);
-            boss_health -= last_damage_dealt;
-            boss.SetHealth(boss_health);
-            start_attack_time = DateTime.Now;
+            boss.Health -= last_damage_dealt;
+            start_play_time = DateTime.Now;
             can_play = false;
         }
 
@@ -55,14 +53,6 @@ namespace Wowwbot
                 return this.total_damage_dealt.CompareTo(other.total_damage_dealt);
         }
 
-        public void AddOneCurrentRouletteStreak()
-        {
-            current_roulette_streak += 1;
-        }
-        public void ResetCurrentRouletteStreak()
-        {
-            current_roulette_streak = 0;
-        }
         public void ResetStats()
         {
             attack_chance = 100;
@@ -71,69 +61,55 @@ namespace Wowwbot
             total_loot_stolen = 0;
         }
 
-        public bool GetCanPlay()
+        public bool CanPlay
         {
-            return can_play;
+            get { return can_play; }
+            set { can_play = value; }
         }
-        public void SetCanPlayTrue()
+        public bool AttackLanded
         {
-            can_play = true;
+            get { return attack_landed; }
+            set { attack_landed = value; }
         }
-        public bool GetAttackLanded()
+        public int LastDamageDealt
         {
-            return attack_landed;
+            get { return last_damage_dealt; }
+            set { last_damage_dealt = value; }
         }
-        public void SetAttackLanded(bool landed)
+        public int AttackChance
         {
-            attack_landed = landed;
+            get { return attack_chance; }
+            set { attack_chance = value; }
         }
-        public int GetLastDamageDealt()
+        public string Username
         {
-            return last_damage_dealt;
+            get { return username; }
+            //set { username = value; }
         }
-        public int GetAttackChance()
+        public DateTime StartPlayTime
         {
-            return attack_chance;
+            get { return start_play_time; }
+            set { start_play_time = value; }
         }
-        public void SetAttackChance(int new_attack_chance)
+        public TimeSpan CurrentCooldown
         {
-            attack_chance = new_attack_chance;
+            get { return current_cooldown; }
+            set { current_cooldown = value; }
         }
-        public string GetUsername()
+        public int CurrentRouletteStreak
         {
-            return username;
+            get { return current_roulette_streak; }
+            set { current_roulette_streak = value; }
         }
-        public DateTime GetStartAttackTime()
+        public int TotalDamageDealt
         {
-            return start_attack_time;
+            get { return total_damage_dealt; }
+            set { total_damage_dealt = value; }
         }
-        public TimeSpan GetCurrentCooldown()
+        public int TotalLootStolen
         {
-            return current_cooldown;
-        }
-        public void SetCurrentCooldown(TimeSpan new_current_cooldown)
-        {
-            current_cooldown = new_current_cooldown;
-        }
-        public int GetCurrentRouletteStreak()
-        {
-            return current_roulette_streak;
-        }
-        public int GetTotalDamageDealt()
-        {
-            return total_damage_dealt;
-        }
-        public void AddToTotalDamageDealt(int damage)
-        {
-            total_damage_dealt += damage;
-        }
-        public int GetTotalLootStolen()
-        {
-            return total_loot_stolen;
-        }
-        public void AddToLootStolen(int loot)
-        {
-            total_loot_stolen += loot;
+            get { return total_loot_stolen; }
+            set { total_loot_stolen = value; }
         }
     }
 }

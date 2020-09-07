@@ -136,7 +136,7 @@ namespace Wowwbot
             //Show list of commands
             if (e.ChatMessage.Message.Equals("!wowcommands"))
             {
-                client.SendMessage(TwitchInfo.ChannelName, $"/me My current commands are:   !socials // !schedule // !wowwyyKcount // !wowcourt // !chance // !bin // !minigames");
+                client.SendMessage(TwitchInfo.ChannelName, $"/me My current commands are:   !socials // !schedule // !wowwyyKcount // !wowcourt // !chance // !bin // !games // !gameinfo");
             }
             //Post wowwyyK count command
             if (e.ChatMessage.Message.Equals("!wowwyyKcount"))
@@ -163,10 +163,15 @@ namespace Wowwbot
             {
                 client.SendMessage(TwitchInfo.ChannelName, $"/me wowwyyT https://images-na.ssl-images-amazon.com/images/I/51w7Dz66ncL._AC_SL1000_.jpg wowwyyT");
             }
-            //Boss command
-            if (e.ChatMessage.Message.Equals("!minigames"))
+            //Minigames command
+            if (e.ChatMessage.Message.Equals("!games"))
             {
                 PostMinigameMsg();
+            }
+            //Games info command
+            if (e.ChatMessage.Message.Equals("!gameinfo"))
+            {
+                client.SendMessage(TwitchInfo.ChannelName, game_manager.GameInfo);
             }
             //Player play minigame command
             if (e.ChatMessage.Message.Equals("!play"))
@@ -314,9 +319,9 @@ namespace Wowwbot
 
         private void PostMinigameMsg()
         {
-            if (game_manager.GetMiniGameStarted())
+            if (game_manager.MiniGameStarted)
             {
-                client.SendMessage(TwitchInfo.ChannelName, $"/me This bot hosts minigames wowwyyPog {game_manager.GetCurrentMinigameStatusMessage()}  Use the command !play to join.");
+                client.SendMessage(TwitchInfo.ChannelName, $"/me This bot hosts minigames wowwyyPog {game_manager.CurrentMinigameStatusMessage}  Use the command !play to join.");
             }
             else
             {

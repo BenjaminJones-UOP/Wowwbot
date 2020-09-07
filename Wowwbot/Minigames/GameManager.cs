@@ -22,6 +22,7 @@ namespace Wowwbot
         const int num_of_games = (int)MiniGameType.End;
         string[] mini_game_type_string = { "'Boss: Deal the most damage!'", "'Boss: Last hit the boss!'", "'Heist: Steal the most stuff!'" };
         string current_minigame_status;
+        string[] game_info = {"/me Simply use !play to attack the boss. Winner is whoever deals the most damage by the time the boss' health reaches zero.", "/me Use !play to attack the boss. Get the last hit on the boss to win. Watch out though, the boss dodges attacks at low health.", "/me Use !play to steal gems, Chances are: 50% to steal small lootbag, 10% to steal a medium lootbag and 0.1% to steal a large lootbag!", "/me No game currently active. Ask Wowwyy or a mod to add one wowwyyPog " };
         bool minigame_started;
         List<Player> player_list;
         Boss stream_boss;
@@ -30,14 +31,17 @@ namespace Wowwbot
         const int large_lootbag_chance = 1000; //1 in 1000
         const int medium_lootbag_chance = 900; //1 in 10
         const int small_lootbag_chance = 500; // 1 in 2
-        const int large_lootbag_value = 1000;
-        const int medium_lootbag_value = 10;
-        const int small_lootbag_value = 1;
+        const int large_lootbag_value_max = 3000;
+        const int large_lootbag_value_min = 1000;
+        const int medium_lootbag_value_max = 150;
+        const int medium_lootbag_value_min = 50;
+        const int small_lootbag_value_max = 20;
+        const int small_lootbag_value_min = 1;
         string lootbag_stolen;
 
         TimeSpan play_cooldown = new TimeSpan(0, 5, 0); //Player's cooldown hh:mm:ss format
         const string boss_name = "WowwBoss";
-        const int boss_health = 8000;
+        const int boss_health = 6000;
         const int boss_health_dodge_threshold = 750;
         const int boss_dodge_chance = 50;
         const int player_attack_min = -5;
@@ -61,7 +65,7 @@ namespace Wowwbot
             this.client = client;
             if (minigame_started)
             {
-                client.SendMessage(TwitchInfo.ChannelName, $"/me Minigame already exists: {GetCurrentMinigameStatusMessage()}");
+                client.SendMessage(TwitchInfo.ChannelName, $"/me Minigame already exists: {CurrentMinigameStatusMessage}");
                 return;
             }
             //Determine minigame type
@@ -69,6 +73,7 @@ namespace Wowwbot
             {
                 Random rng_gametype = new Random();
                 mini_game_type = (MiniGameType)rng_gametype.Next(num_of_games);
+                //mini_game_type = MiniGameType.Heist; //This is for setting the game type for testing
 
                 minigame_started = true;
             }
@@ -78,8 +83,8 @@ namespace Wowwbot
                 if (stream_boss == null)
                 {
                     stream_boss = new Boss(boss_health, boss_name);
-                    client.SendMessage(TwitchInfo.ChannelName, $"/me Boss '{stream_boss.GetName()}' has been added. The game type is: {mini_game_type_string[(int)mini_game_type]} and Boss' health is {stream_boss.GetHealth()}.");
-                    current_minigame_status = $"The game type is: {mini_game_type_string[(int)mini_game_type]} and Boss' health is {stream_boss.GetHealth()}.";
+                    client.SendMessage(TwitchInfo.ChannelName, $"/me Boss '{stream_boss.Name}' has been added. The game type is: {mini_game_type_string[(int)mini_game_type]} and Boss' health is {stream_boss.Health}.");
+                    current_minigame_status = $"The game type is: {mini_game_type_string[(int)mini_game_type]} and Boss' health is {stream_boss.Health}.";
                 }
             }
             if (mini_game_type == MiniGameType.Heist && minigame_started)
@@ -107,11 +112,11 @@ namespace Wowwbot
                     FindOrAddPlayer(input_username);
 
                     //Specific play logic here
-                    current_player.SetCurrentCooldown(play_cooldown - (DateTime.Now - current_player.GetStartAttackTime()));
-                    if (current_player.GetCurrentCooldown() <= TimeSpan.Zero) { current_player.SetCanPlayTrue(); }
-                    if (current_player.GetCanPlay())
+                    current_player.CurrentCooldown = play_cooldown - (DateTime.Now - current_player.StartPlayTime);
+                    if (current_player.CurrentCooldown <= TimeSpan.Zero) { current_player.CanPlay = true; }
+                    if (current_player.CanPlay)
                     {
-                        current_player.SetCurrentCooldown(play_cooldown);
+                        current_player.CurrentCooldown = play_cooldown;
                         if (mini_game_type == MiniGameType.TotalDmgDealt)
                         {
                             TotalDmgDealtPlay();
@@ -124,13 +129,15 @@ namespace Wowwbot
                         }
                         else if (mini_game_type == MiniGameType.Heist)
                         {
+                            current_player.StartPlayTime = DateTime.Now;
+                            current_player.CanPlay = false;
                             HeistPlay();
-                            client.SendMessage(TwitchInfo.ChannelName, $"/me {current_player.GetUsername()} stole {lootbag_stolen} Their total stolen is {current_player.GetTotalLootStolen()} gems. Cooldown until next heist: {current_player.GetCurrentCooldown().Minutes}m{current_player.GetCurrentCooldown().Seconds}s");
+                            client.SendMessage(TwitchInfo.ChannelName, $"/me {current_player.Username} stole {lootbag_stolen} Their total stolen is {current_player.TotalLootStolen} gems. Cooldown until next heist: {current_player.CurrentCooldown.Minutes}m{current_player.CurrentCooldown.Seconds}s");
                         }
                     }
                     else
                     {
-                        client.SendMessage(TwitchInfo.ChannelName, $"/me {current_player.GetUsername()} can't play now! Your cooldown is {current_player.GetCurrentCooldown().Minutes}m{current_player.GetCurrentCooldown().Seconds}s");
+                        client.SendMessage(TwitchInfo.ChannelName, $"/me {current_player.Username} can't play now! Your cooldown is {current_player.CurrentCooldown.Minutes}m{current_player.CurrentCooldown.Seconds}s");
                     }
                 }
                 catch (Exception exception)
@@ -148,7 +155,7 @@ namespace Wowwbot
             for (int i = 0; i < player_list.Count; i++)
             {
                 new_player = player_list[i];
-                if (username == new_player.GetUsername())
+                if (username == new_player.Username)
                 {
                     player_found = true;
                     hit_count++;
@@ -178,36 +185,36 @@ namespace Wowwbot
             int chance = timeout_chance.Next(1, 5);
             if (chance == 1)
             {
-                client.SendMessage(TwitchInfo.ChannelName, $"/timeout {current_player.GetUsername()} {timeout_length.Next(min_timeout, max_timeout)}");
-                client.SendMessage(TwitchInfo.ChannelName, $"/me {current_player.GetUsername()} Your streak was: {current_player.GetCurrentRouletteStreak()}!");
-                current_player.ResetCurrentRouletteStreak();
+                client.SendMessage(TwitchInfo.ChannelName, $"/timeout {current_player.Username} {timeout_length.Next(min_timeout, max_timeout)}");
+                client.SendMessage(TwitchInfo.ChannelName, $"/me {current_player.Username} Your streak was: {current_player.CurrentRouletteStreak}!");
+                current_player.CurrentRouletteStreak = 0;
             }
             else
             {
-                current_player.AddOneCurrentRouletteStreak();
-                client.SendMessage(TwitchInfo.ChannelName, $"/me {current_player.GetUsername()} You got lucky mate. Current streak: {current_player.GetCurrentRouletteStreak()}");
+                current_player.CurrentRouletteStreak += 1;
+                client.SendMessage(TwitchInfo.ChannelName, $"/me {current_player.Username} You got lucky mate. Current streak: {current_player.CurrentRouletteStreak}");
             }
         }
         private void TotalDmgDealtPlay()
         {
             current_player.Attack(stream_boss);
-            current_player.AddToTotalDamageDealt(current_player.GetLastDamageDealt());
-            current_player.SetAttackLanded(true);
+            current_player.TotalDamageDealt += current_player.LastDamageDealt;
+            current_player.AttackLanded = true;
         }
         private void LastHitPlay()
         {
             Random rng_attack_chance = new Random();
-            if (stream_boss.GetHealth() < boss_health_dodge_threshold)
+            if (stream_boss.Health < boss_health_dodge_threshold)
             {
-                current_player.SetAttackChance(rng_attack_chance.Next(0, 100));
-                if (current_player.GetAttackChance() < boss_dodge_chance)
+                current_player.AttackChance = rng_attack_chance.Next(0, 100);
+                if (current_player.AttackChance < boss_dodge_chance)
                 {
                     current_player.Attack(stream_boss);
-                    current_player.SetAttackLanded(true);
+                    current_player.AttackLanded = true;
                 }
                 else
                 {
-                    current_player.SetAttackLanded(false);
+                    current_player.AttackLanded = false;
                 }
             }
             else
@@ -221,18 +228,24 @@ namespace Wowwbot
             int loot_bag_roll = loot_bag_chance.Next(0, large_lootbag_chance);
             if (loot_bag_roll == large_lootbag_chance)
             {
-                current_player.AddToLootStolen(large_lootbag_value);
-                lootbag_stolen = "a large lootbag worth 1000 gems!!!!!!!";
+                Random large_lootbag_value = new Random();
+                int loot_stolen = large_lootbag_value.Next(large_lootbag_value_min, large_lootbag_value_max);
+                current_player.TotalLootStolen += loot_stolen;
+                lootbag_stolen = $"a large lootbag worth {loot_stolen} gems!!!!!!!";
             }
             else if (loot_bag_roll > medium_lootbag_chance)
             {
-                current_player.AddToLootStolen(medium_lootbag_value);
-                lootbag_stolen = "a medium lootbag worth 10 gems!";
+                Random medium_lootbag_value = new Random();
+                int loot_stolen = medium_lootbag_value.Next(medium_lootbag_value_min, medium_lootbag_value_max);
+                current_player.TotalLootStolen += loot_stolen;
+                lootbag_stolen = $"a medium lootbag worth {loot_stolen} gems!";
             }
             else if (loot_bag_roll > small_lootbag_chance)
             {
-                current_player.AddToLootStolen(small_lootbag_value);
-                lootbag_stolen = "a small lootbag worth just 1 gem";
+                Random small_lootbag_value = new Random();
+                int loot_stolen = small_lootbag_value.Next(small_lootbag_value_min, small_lootbag_value_max); ;
+                current_player.TotalLootStolen += loot_stolen;
+                lootbag_stolen = $"a small lootbag worth just {loot_stolen} gems";
             }
             else
             {
@@ -242,32 +255,32 @@ namespace Wowwbot
 
         private void DidAttackLand()
         {
-            if (current_player.GetAttackLanded())
+            if (current_player.AttackLanded)
             {
-                client.SendMessage(TwitchInfo.ChannelName, $"/me {current_player.GetUsername()} dealt {current_player.GetLastDamageDealt()} damage to {stream_boss.GetName()}. Boss' health is now {stream_boss.GetHealth()}. {current_player.GetUsername()} your attack cooldown is {current_player.GetCurrentCooldown().Minutes}m{current_player.GetCurrentCooldown().Seconds}s");
+                client.SendMessage(TwitchInfo.ChannelName, $"/me {current_player.Username} dealt {current_player.LastDamageDealt} damage to {stream_boss.Name}. Boss' health is now {stream_boss.Health}. {current_player.Username} your attack cooldown is {current_player.CurrentCooldown.Minutes}m{current_player.CurrentCooldown.Seconds}s");
                 CheckBossDead();
             }
             else
             {
-                client.SendMessage(TwitchInfo.ChannelName, $"/me {current_player.GetUsername()} missed!!!!!");
+                client.SendMessage(TwitchInfo.ChannelName, $"/me {current_player.Username} missed!!!!!");
             }
         }
         private void CheckBossDead()
         {
-            if (stream_boss.GetHealth() <= 0)
+            if (stream_boss.Health <= 0)
             {
                 if (mini_game_type == MiniGameType.LastHit)
-                    client.SendMessage(TwitchInfo.ChannelName, $"/me Boss destroyed! {current_player.GetUsername()} landed the final blow! The stream victor!");
+                    client.SendMessage(TwitchInfo.ChannelName, $"/me Boss destroyed! {current_player.Username} landed the final blow! The stream victor!");
                 else if (mini_game_type == MiniGameType.TotalDmgDealt)
                 {
                     player_list.Sort();
                     if (player_list.Count > 2)
                     {
-                        client.SendMessage(TwitchInfo.ChannelName, $"/me Boss destroyed! Winner for total damage dealt is {player_list[player_list.Count - 1].GetUsername()} with {player_list[player_list.Count - 1].GetTotalDamageDealt()} total damage. 2nd was {player_list[player_list.Count - 2].GetUsername()} with {player_list[player_list.Count - 2].GetTotalDamageDealt()} damage. 3rd was {player_list[player_list.Count - 3].GetUsername()} with {player_list[player_list.Count - 3].GetTotalDamageDealt()} damage");
+                        client.SendMessage(TwitchInfo.ChannelName, $"/me Boss destroyed! Winner for total damage dealt is {player_list[player_list.Count - 1].Username} with {player_list[player_list.Count - 1].TotalDamageDealt} total damage. 2nd was {player_list[player_list.Count - 2].Username} with {player_list[player_list.Count - 2].TotalDamageDealt} damage. 3rd was {player_list[player_list.Count - 3].Username} with {player_list[player_list.Count - 3].TotalDamageDealt} damage");
                     }
                     else
                     {
-                        client.SendMessage(TwitchInfo.ChannelName, $"/me Boss destroyed! Winner for total damage dealt is {player_list[player_list.Count - 1].GetUsername()} with {player_list[player_list.Count - 1].GetTotalDamageDealt()} total damage.");
+                        client.SendMessage(TwitchInfo.ChannelName, $"/me Boss destroyed! Winner for total damage dealt is {player_list[player_list.Count - 1].Username} with {player_list[player_list.Count - 1].TotalDamageDealt} total damage.");
                     }
                 }
                 ResetGamesAndPlayer();
@@ -275,14 +288,14 @@ namespace Wowwbot
         }
         private void HeistWinner()
         {
-            player_list.Sort();
+            player_list.Sort((p1, p2) => p1.TotalLootStolen.CompareTo(p2.TotalLootStolen));
             if (player_list.Count > 2)
             {
-                client.SendMessage(TwitchInfo.ChannelName, $"/me End of the heist! Winner for total stolen is {player_list[player_list.Count - 1].GetUsername()} with {player_list[player_list.Count - 1].GetTotalLootStolen()} gems. 2nd was {player_list[player_list.Count - 2].GetUsername()} with {player_list[player_list.Count - 2].GetTotalLootStolen()} gems. 3rd was {player_list[player_list.Count - 3].GetUsername()} with {player_list[player_list.Count - 3].GetTotalLootStolen()} gems");
+                client.SendMessage(TwitchInfo.ChannelName, $"/me End of the heist! Winner for total stolen is {player_list[player_list.Count - 1].Username} with {player_list[player_list.Count - 1].TotalLootStolen} gems. 2nd was {player_list[player_list.Count - 2].Username} with {player_list[player_list.Count - 2].TotalLootStolen} gems. 3rd was {player_list[player_list.Count - 3].Username} with {player_list[player_list.Count - 3].TotalLootStolen} gems");
             }
             else
             {
-                client.SendMessage(TwitchInfo.ChannelName, $"/me End of the heist! Winner for total stolen is {player_list[player_list.Count - 1].GetUsername()} with {player_list[player_list.Count - 1].GetTotalLootStolen()} gems.");
+                client.SendMessage(TwitchInfo.ChannelName, $"/me End of the heist! Winner for total stolen is {player_list[player_list.Count - 1].Username} with {player_list[player_list.Count - 1].TotalLootStolen} gems.");
             }
         }
         private void ResetGamesAndPlayer()
@@ -298,17 +311,26 @@ namespace Wowwbot
             if (client != null) client = null;
         }
 
-        public bool GetMiniGameStarted()
+        public bool MiniGameStarted
         {
-            return minigame_started;
+            get { return minigame_started; }
+            set { minigame_started = value; }
         }
-        public string GetCurrentMinigameStatusMessage()
+        public string CurrentMinigameStatusMessage
         {
-            if(stream_boss != null) //Resets string with most current boss health
+            get
             {
-                current_minigame_status = $"The game type is: {mini_game_type_string[(int)mini_game_type]} and Boss' health is {stream_boss.GetHealth()}.";
+                if (stream_boss != null) //Resets string with most current boss health
+                {
+                    current_minigame_status = $"The game type is: {mini_game_type_string[(int)mini_game_type]} and Boss' health is {stream_boss.Health}.";
+                }
+                return current_minigame_status;
             }
-            return current_minigame_status;
+            set { current_minigame_status = value; }
+        }
+        public string GameInfo
+        {
+            get { return game_info[(int)mini_game_type]; }
         }
     }
 }
