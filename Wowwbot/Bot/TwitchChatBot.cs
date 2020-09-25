@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Timers;
 using System.IO;
-using System.Collections.Generic;
 using TwitchLib.Client;
 using TwitchLib.Client.Models;
 using TwitchLib.Client.Events;
@@ -75,6 +74,8 @@ namespace Wowwbot
         {
             social_timer.Stop();
             schedule_timer.Stop();
+            minigame_timer.Stop();
+            client.Disconnect();
         }
 
         //private void PubSub_OnPubSubServiceError(object sender, OnPubSubServiceErrorArgs e)
@@ -136,7 +137,7 @@ namespace Wowwbot
             //Show list of commands
             if (e.ChatMessage.Message.Equals("!wowcommands"))
             {
-                client.SendMessage(TwitchInfo.ChannelName, $"/me My current commands are:   !socials // !schedule // !wowwyyKcount // !wowcourt // !chance // !bin // !games // !gameinfo");
+                client.SendMessage(TwitchInfo.ChannelName, $"/me My current commands are:   !socials // !schedule // !discord // !wowwyyKcount // !wowcourt // !chance // !bin // !games // !gameinfo // !play");
             }
             //Post wowwyyK count command
             if (e.ChatMessage.Message.Equals("!wowwyyKcount"))
@@ -152,6 +153,11 @@ namespace Wowwbot
             if (e.ChatMessage.Message.Equals("!schedule"))
             {
                 client.SendMessage(TwitchInfo.ChannelName, $"/me Wowwyy's schedule is every Thursday and Friday 4pm GMT+1 (UK). Unscheduled streams may occur so please follow to catch these as well!");
+            }
+            //Discord Command
+            if (e.ChatMessage.Message.Equals("!discord"))
+            {
+                client.SendMessage(TwitchInfo.ChannelName, $"/me Join the hideout discord with this link: https://discord.gg/PzpUJ2 ");
             }
             //Wowcourt command
             if (e.ChatMessage.Message.Contains("!wowcourt"))

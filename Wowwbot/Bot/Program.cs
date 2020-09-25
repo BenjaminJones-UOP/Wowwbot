@@ -1,5 +1,4 @@
 ﻿using System;
-
 using TwitchLib;
 using TwitchLib.Client;
 
