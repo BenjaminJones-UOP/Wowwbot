@@ -19,15 +19,15 @@ namespace Wowwbot
         const int num_of_games = (int)MiniGameType.End;
         string[] mini_game_type_string = { "'Boss: Deal the most damage!'", "'Boss: Last hit the boss!'", "'Heist: Steal the most stuff!'" };
         string current_minigame_status;
-        string[] game_info = {"/me Simply use !play to attack the boss. Winner is whoever deals the most damage by the time the boss' health reaches zero.", "/me Use !play to attack the boss. Get the last hit on the boss to win. Watch out though, the boss dodges attacks at low health.", "/me Use !play to steal gems, Chances are: 50% to steal small lootbag, 10% to steal a medium lootbag and 0.1% to steal a large lootbag!", "/me No game currently active. Ask Wowwyy or a mod to add one wowwyyPog " };
+        string[] game_info = {"/me Simply use !play to attack the boss. Winner is whoever deals the most damage by the time the boss' health reaches zero.", "/me Use !play to attack the boss. Get the last hit on the boss to win. Watch out though, the boss dodges attacks at low health.", "/me Use !play to steal gems, Chances are: 50% to steal small lootbag, 10% to steal a medium lootbag and 0.1% to steal a large lootbag!", "/me No game currently active. Ask Wowwyy or a mod to add one wowwyyP " };
         bool minigame_started;
         List<Player> player_list;
         Boss stream_boss;
         Player current_player;
 
-        const int large_lootbag_chance = 1000; //1 in 1000
-        const int medium_lootbag_chance = 900; //1 in 10
-        const int small_lootbag_chance = 500; // 1 in 2
+        const int large_lootbag_chance = 100; //1 in 100
+        const int medium_lootbag_chance = 90; //1 in 10
+        const int small_lootbag_chance = 50; // 1 in 2
         const int large_lootbag_value_max = 3000;
         const int large_lootbag_value_min = 1000;
         const int medium_lootbag_value_max = 150;
@@ -38,7 +38,7 @@ namespace Wowwbot
 
         TimeSpan play_cooldown = new TimeSpan(0, 5, 0); //Player's cooldown hh:mm:ss format
         const string boss_name = "WowwBoss";
-        const int boss_health = 6000;
+        const int boss_health = 5000;
         const int boss_health_dodge_threshold = 750;
         const int boss_dodge_chance = 50;
         const int player_attack_min = -5;
@@ -47,19 +47,18 @@ namespace Wowwbot
         const int max_timeout = 300;
         const int min_timeout = 10;
 
-        public GameManager()
+        public GameManager(TwitchClient client)
         {
             player_list = new List<Player>();
             mini_game_type = MiniGameType.End;
             current_player = new Player();
-            client = new TwitchClient();
+            this.client = client;
             current_minigame_status = "";
             lootbag_stolen = "";
         }
-
-        public void Start(TwitchClient client)
+        
+        public void Start()
         {
-            this.client = client;
             if (minigame_started)
             {
                 client.SendMessage(TwitchInfo.ChannelName, $"/me Minigame already exists: {CurrentMinigameStatusMessage}");
@@ -71,6 +70,11 @@ namespace Wowwbot
                 Random rng_gametype = new Random();
                 mini_game_type = (MiniGameType)rng_gametype.Next(num_of_games);
                 //mini_game_type = MiniGameType.Heist; //This is for setting the game type for testing
+
+                while (mini_game_type == MiniGameType.TotalDmgDealt)
+                {
+                    mini_game_type = (MiniGameType)rng_gametype.Next(num_of_games); //This should bypass last damage hit, quick fix 
+                }
 
                 minigame_started = true;
             }
@@ -94,7 +98,7 @@ namespace Wowwbot
         {
             if (mini_game_type == MiniGameType.Heist)
             {
-                HeistWinner();
+                StopHeist();
             }
             client.SendMessage(TwitchInfo.ChannelName, $"/me Minigame {mini_game_type_string[(int)mini_game_type]} stopped.");
             ResetGamesAndPlayer();
@@ -118,11 +122,13 @@ namespace Wowwbot
                         {
                             TotalDmgDealtPlay();
                             DidAttackLand();
+                            current_player.CanPlay = false;
                         }
                         else if (mini_game_type == MiniGameType.LastHit)
                         {
                             LastHitPlay();
                             DidAttackLand();
+                            current_player.CanPlay = false;
                         }
                         else if (mini_game_type == MiniGameType.Heist)
                         {
@@ -130,6 +136,10 @@ namespace Wowwbot
                             current_player.CanPlay = false;
                             HeistPlay();
                             client.SendMessage(TwitchInfo.ChannelName, $"/me {current_player.Username} stole {lootbag_stolen} Their total stolen is {current_player.TotalLootStolen} gems. Cooldown until next heist: {current_player.CurrentCooldown.Minutes}m{current_player.CurrentCooldown.Seconds}s");
+                        }
+                        else if (mini_game_type == MiniGameType.End)
+                        {
+                            client.SendMessage(TwitchInfo.ChannelName, $"/me {current_player.Username} there currently isn't a game active! Message a mod or Wowwyy to see if we should add one :) ");
                         }
                     }
                     else
@@ -211,6 +221,7 @@ namespace Wowwbot
                 }
                 else
                 {
+                    current_player.StartPlayTime = DateTime.Now;
                     current_player.AttackLanded = false;
                 }
             }
@@ -283,7 +294,7 @@ namespace Wowwbot
                 ResetGamesAndPlayer();
             }
         }
-        private void HeistWinner()
+        private void StopHeist()
         {
             player_list.Sort((p1, p2) => p1.TotalLootStolen.CompareTo(p2.TotalLootStolen));
             if (player_list.Count > 2)
@@ -305,7 +316,7 @@ namespace Wowwbot
             mini_game_type = MiniGameType.End;
 
             if (stream_boss != null) stream_boss = null;
-            if (client != null) client = null;
+            //if (client != null) client = null;
         }
 
         public bool MiniGameStarted

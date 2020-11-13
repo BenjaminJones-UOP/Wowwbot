@@ -18,13 +18,13 @@ namespace Wowwbot
         const int schedule_timer_minutes = 45;
         const int boss_stats_timer_minutes = 10;
 
-        int wowwyyKcount = 0;
-        string path = @"..\\..\\wowwyyKcount.txt";
+        //int wowwyyKcount = 0;
+        //string path = @"wowwyyKcount.txt";
 
         readonly ConnectionCredentials credentials = new ConnectionCredentials(TwitchInfo.BotUsername, TwitchInfo.BotToken);
         public static TwitchClient client = new TwitchClient();
         //private static TwitchPubSub pubsub = new TwitchPubSub();
-        string[] bannedWords = { "viewerlabs.com", "streambot.com", "feedpixel.com", "views.run", "phantom.bot", "stream-chaos.com", "views4twitch.com", "viewbotr.com", "addviewerz.com", "bigfollows.com" };
+        string[] bannedWords = { "viewerlabs.com", "streambot.com", "feedpixel.com", "views.run", "phantom.bot", "stream-chaos.com", "views4twitch.com", "viewbotr.com", "addviewerz.com", "bigfollows", "clck.ru" };
         string[] timedoutWords = { "nigger", "nigga", "niga", "n1gger", "n1gga", "n1gg3r", "nigg3r"};
         Timer social_timer;
         Timer schedule_timer;
@@ -61,13 +61,20 @@ namespace Wowwbot
             //pubsub.OnRewardRedeemed += PubSub_OnRewardRedeemed;
             //pubsub.ListenToVideoPlayback(TwitchInfo.ChannelName);
 
-            StreamReader countfile = new StreamReader(path);
-            wowwyyKcount = int.Parse(countfile.ReadLine());
-            countfile.Close();
-
-            game_manager = new GameManager();
-
             client.Connect();
+
+            //try
+            //{
+            //    StreamReader countfile = new StreamReader(path);
+            //    wowwyyKcount = int.Parse(countfile.ReadLine());
+            //    countfile.Close();
+            //}
+            //catch
+            //{
+            //    Console.WriteLine("Cannot find wowwyyKcount text");
+            //}
+
+            game_manager = new GameManager(client);
         }
 
         internal void Disconnect()
@@ -122,28 +129,32 @@ namespace Wowwbot
         //On message received
         private void Client_OnMessageReceived(object sender, OnMessageReceivedArgs e)
         {
-            string roulette_reward = e.ChatMessage.CustomRewardId;
+            //string roulette_reward = e.ChatMessage.CustomRewardId;
             //wowwyyK count logic
-            if (e.ChatMessage.Message.Contains("wowwyyK"))
-            {
-                string temp = e.ChatMessage.Message;
-                while(temp.IndexOf("wowwyyK")!=-1) //while wowwyyK is present, count it and then remove it
-                {
-                    wowwyyKcount++;
-                    temp = temp.Remove(temp.IndexOf("wowwyyK"), 7);
-                }
-                File.WriteAllText(path, wowwyyKcount.ToString());
-            }
+            //if (e.ChatMessage.Message.Contains("wowwyyK"))
+            //{
+            //    string temp = e.ChatMessage.Message;
+            //    while(temp.IndexOf("wowwyyK")!=-1) //while wowwyyK is present, count it and then remove it
+            //    {
+            //        wowwyyKcount++;
+            //        temp = temp.Remove(temp.IndexOf("wowwyyK"), 7);
+            //    }
+            //    File.WriteAllText(path, wowwyyKcount.ToString());
+            //}
             //Show list of commands
             if (e.ChatMessage.Message.Equals("!wowcommands"))
             {
-                client.SendMessage(TwitchInfo.ChannelName, $"/me My current commands are:   !socials // !schedule // !discord // !wowwyyKcount // !wowcourt // !chance // !bin // !games // !gameinfo // !play");
+                client.SendMessage(TwitchInfo.ChannelName, $"/me My current commands are:   !socials // !schedule // !discord // !wowcourt // !chance // !bin // !games // !gameinfo // !play");
+            }
+            if (e.ChatMessage.Message.Equals("!mans"))
+            {
+                client.SendMessage(TwitchInfo.ChannelName, $"/me There is not adequate information to communicate with said gentleman");
             }
             //Post wowwyyK count command
-            if (e.ChatMessage.Message.Equals("!wowwyyKcount"))
-            {
-                client.SendMessage(TwitchInfo.ChannelName,  $"/me wowwyyK {wowwyyKcount}");
-            }
+            //if (e.ChatMessage.Message.Equals("!wowwyyKcount"))
+            //{
+            //    client.SendMessage(TwitchInfo.ChannelName,  $"/me wowwyyK {wowwyyKcount}");
+            //}
             //Socials command
             if (e.ChatMessage.Message.Equals("!socials"))
             {
@@ -157,7 +168,7 @@ namespace Wowwbot
             //Discord Command
             if (e.ChatMessage.Message.Equals("!discord"))
             {
-                client.SendMessage(TwitchInfo.ChannelName, $"/me Join the hideout discord with this link: https://discord.gg/PzpUJ2 ");
+                client.SendMessage(TwitchInfo.ChannelName, $"/me Join the hideout discord with this link: https://discord.gg/VrHX4f ");
             }
             //Wowcourt command
             if (e.ChatMessage.Message.Contains("!wowcourt"))
@@ -199,6 +210,10 @@ namespace Wowwbot
                 {
                     client.SendMessage(TwitchInfo.ChannelName, $"/me Clumsy's the mum wowwyyS");
                 }
+                else if (e.ChatMessage.IsBroadcaster)
+                {
+                    client.SendMessage(TwitchInfo.ChannelName, $"/me Nyoooh");
+                }
                 else
                 {
                     game_manager.ChanceGame(e.ChatMessage.Username);
@@ -232,7 +247,7 @@ namespace Wowwbot
                 //Start minigame command
                 if (e.ChatMessage.Message.StartsWith("!start"))
                 {
-                    game_manager.Start(client);
+                    game_manager.Start();
                 }
                 //Stop minigame command
                 if (e.ChatMessage.Message.Equals("!stop"))
@@ -284,7 +299,7 @@ namespace Wowwbot
         //On resub
         private void Client_OnReSubscriber(object sender, OnReSubscriberArgs e)
         {
-            client.SendMessage(e.Channel, $"/me Thank you {e.ReSubscriber.DisplayName} for your resub. Welcome back to the Brotherhood! Your sub streak is {e.ReSubscriber.MsgParamCumulativeMonths} months");
+            client.SendMessage(e.Channel, $"/me Thank you {e.ReSubscriber.DisplayName} for your resub. Welcome back to the Brotherhood! Your sub streak is {e.ReSubscriber.Months} months");
         }
 
         //On gifted sub
@@ -327,11 +342,11 @@ namespace Wowwbot
         {
             if (game_manager.MiniGameStarted)
             {
-                client.SendMessage(TwitchInfo.ChannelName, $"/me This bot hosts minigames wowwyyPog {game_manager.CurrentMinigameStatusMessage}  Use the command !play to join.");
+                client.SendMessage(TwitchInfo.ChannelName, $"/me This bot hosts minigames wowwyyP {game_manager.CurrentMinigameStatusMessage}  Use the command !play to join.");
             }
             else
             {
-                client.SendMessage(TwitchInfo.ChannelName, $"/me This bot hosts minigames wowwyyPog There is currently no game active. Ask either a mod or Wowwyy to get one started wowwyyPog");
+                client.SendMessage(TwitchInfo.ChannelName, $"/me This bot hosts minigames wowwyyP There is currently no game active. Ask either a mod or Wowwyy to get one started wowwyyP");
             }
         }
         private double minutes_to_milliseconds(double minutes)

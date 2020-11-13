@@ -95,5 +95,14 @@ namespace Wowwbot {
                 return ResourceManager.GetString("ClientId", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 12917.
+        /// </summary>
+        internal static string wowwyyKcount {
+            get {
+                return ResourceManager.GetString("wowwyyKcount", resourceCulture);
+            }
+        }
     }
 }
